@@ -18,10 +18,6 @@ The user will also be able to download the csv file using the download csv file 
 <img src = 'images/Screenshot%20(61).png' width="500">
 </p>
 
-<p align="center">
-
-<img src = 'images/Screenshot%20(62).png' width="500">
-</p>
 
 
 

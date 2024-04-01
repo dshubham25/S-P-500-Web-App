@@ -15,7 +15,7 @@ This app retrieves the list of the **S&P 500** (from Wikipedia) and its correspo
 * **Python libraries:** base64, pandas, streamlit, numpy, matplotlib, seaborn
 * **Data source:** [Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies).
 """)
-@st.cache
+@st.cache_data
 def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     html = pd.read_html(url, header = 0)
@@ -32,7 +32,7 @@ tickerData = yf.Ticker(tickerSymbol) # Get ticker data
 tickerDf = tickerData.history(period='1d', start=start_date, end=end_date)
 # Web scraping of S&P 500 data
 #
-@st.cache
+@st.cache_data
 def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     html = pd.read_html(url, header = 0)
@@ -42,8 +42,8 @@ def load_data():
 df = load_data()
 sector = df.groupby('GICS Sector')
 # Ticker information
-string_logo = '<img src=%s>' % tickerData.info['logo_url']
-st.markdown(string_logo, unsafe_allow_html=True)
+# string_logo = '<img src=%s>' % tickerData.info['logo_url']
+# st.markdown(string_logo, unsafe_allow_html=True)
 
 string_name = tickerData.info['longName']
 st.header('**%s**' % string_name)
@@ -94,21 +94,22 @@ data = yf.download(
     )
 
 # Plot Closing Price of Query Symbol
-def price_plot(tickerSymbol):
-  df = pd.DataFrame(data[tickerSymbol].Close)
-  df['Date'] = df.index
-  plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
-  plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
-  plt.xticks(rotation=90)
-  plt.title(tickerSymbol, fontweight='bold')
-  plt.xlabel('Date', fontweight='bold')
-  plt.ylabel('Closing Price', fontweight='bold')
-  st.set_option('deprecation.showPyplotGlobalUse', False)
-  return st.pyplot()
+# def price_plot(tickerSymbol):
+#     tickerData = yf.Ticker(tickerSymbol)
+#     df = tickerData.history(period='1d', start=start_date, end=end_date)
+#     df['Date'] = df.index
+#     plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
+#     plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
+#     plt.xticks(rotation=90)
+#     plt.title(tickerSymbol, fontweight='bold')
+#     plt.xlabel('Date', fontweight='bold')
+#     plt.ylabel('Closing Price', fontweight='bold')
+#     return plt
 
-num_company = st.sidebar.slider('Number of Companies', 1, 10)
+# num_company = st.sidebar.slider('Number of Companies', 1, 10)
 
-if st.button('Show Plots'):
-    st.header('Stock Closing Price')
-    for i in list(df_selected_sector.Symbol)[:num_company]:
-        price_plot(i)
+# if st.button('Show Plots'):
+#     st.header('Stock Closing Price')
+#     for i in list(df_selected_sector.Symbol)[:num_company]:
+#         plot = price_plot(i)
+#         st.pyplot(plot)
