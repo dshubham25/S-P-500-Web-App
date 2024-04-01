@@ -15,7 +15,7 @@ This app retrieves the list of the **S&P 500** (from Wikipedia) and its correspo
 * **Python libraries:** base64, pandas, streamlit, numpy, matplotlib, seaborn
 * **Data source:** [Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies).
 """)
-@st.cache_data
+@st.cache
 def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     html = pd.read_html(url, header = 0)
@@ -32,7 +32,7 @@ tickerData = yf.Ticker(tickerSymbol) # Get ticker data
 tickerDf = tickerData.history(period='1d', start=start_date, end=end_date)
 # Web scraping of S&P 500 data
 #
-@st.cache_data
+@st.cache
 def load_data():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
     html = pd.read_html(url, header = 0)
