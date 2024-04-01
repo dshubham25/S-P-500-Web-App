@@ -1,115 +1,117 @@
 import streamlit as st
 import pandas as pd
-import base64
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import yfinance as yf
-import datetime
-import cufflinks as cf
+import plotly.graph_objects as go
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
 
-st.title('S&P 500 Web App')
+# Function to download historical stock data
+def download_data(ticker, start_date, end_date):
+    data = yf.download(ticker, start=start_date, end=end_date)
+    return data
 
-st.markdown("""
-This app retrieves the list of the **S&P 500** (from Wikipedia) and its corresponding **stock closing price** (year-to-date)!
-* **Python libraries:** base64, pandas, streamlit, numpy, matplotlib, seaborn
-* **Data source:** [Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies).
-""")
-@st.cache
-def load_data():
-    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    html = pd.read_html(url, header = 0)
-    df = html[0]
-    return df
+# Function to preprocess data
+def preprocess_data(data):
+    data['Date'] = data.index
+    data.reset_index(drop=True, inplace=True)
+    return data
 
-df = load_data()
-# Sidebar
-st.sidebar.subheader('Query parameters')
-start_date = st.sidebar.date_input("Start date", datetime.date(2019, 1, 1))
-end_date = st.sidebar.date_input("End date", datetime.date(2021, 1, 31))
-tickerSymbol = st.sidebar.selectbox('Stock ticker', df) # Select ticker symbol
-tickerData = yf.Ticker(tickerSymbol) # Get ticker data
-tickerDf = tickerData.history(period='1d', start=start_date, end=end_date)
-# Web scraping of S&P 500 data
-#
-@st.cache
-def load_data():
-    url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    html = pd.read_html(url, header = 0)
-    df = html[0]
-    return df
+# Function to create features
+def create_features(data):
+    data['Year'] = data['Date'].dt.year
+    data['Month'] = data['Date'].dt.month
+    data['Day'] = data['Date'].dt.day
+    return data
 
-df = load_data()
-sector = df.groupby('GICS Sector')
-# Ticker information
-# string_logo = '<img src=%s>' % tickerData.info['logo_url']
-# st.markdown(string_logo, unsafe_allow_html=True)
+# Function to calculate daily volatility
+def calculate_volatility(data):
+    data['Volatility'] = data['Close'].pct_change().rolling(window=20).std() * np.sqrt(20)
+    return data
 
-string_name = tickerData.info['longName']
-st.header('**%s**' % string_name)
+# Function to classify risk
+def classify_risk(volatility):
+    threshold = 0.05  # Adjust the threshold as needed
+    return 'High' if volatility > threshold else 'Low'
 
-string_summary = tickerData.info['longBusinessSummary']
-st.info(string_summary)
+# Function to train the model
+def train_model(data):
+    X = data[['Year', 'Month', 'Day']]
+    y = data['Close']
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    
+    return model, X_test, y_test
 
-# Ticker data
-st.header('**Ticker data**')
-st.write(tickerDf)
+# Function to make predictions
+def make_predictions(model, X_test):
+    predictions = model.predict(X_test)
+    return predictions
 
-# Bollinger bands
-st.header('**Bollinger Bands**')
-qf=cf.QuantFig(tickerDf,title='First Quant Figure',legend='top',name='GS')
-qf.add_bollinger_bands()
-fig = qf.iplot(asFigure=True)
-st.plotly_chart(fig)
-# Sidebar - Sector selection
-sorted_sector_unique = sorted( df['GICS Sector'].unique() )
-selected_sector = st.sidebar.multiselect('Sector', sorted_sector_unique, sorted_sector_unique)
+# Function to display results
+def display_results(predictions, y_test):
+    results = pd.DataFrame({'Actual': y_test, 'Predicted': predictions})
+    st.write(results)
 
-# Filtering data
-df_selected_sector = df[ (df['GICS Sector'].isin(selected_sector)) ]
+# Function to plot live line chart
+def plot_live_line_chart(data):
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close Price'))
+    fig.update_layout(title='Live Stock Price Movement', xaxis_title='Date', yaxis_title='Price')
+    st.plotly_chart(fig)
 
-st.header('Display Companies in Selected Sector')
-st.write('Data Dimension: ' + str(df_selected_sector.shape[0]) + ' rows and ' + str(df_selected_sector.shape[1]) + ' columns.')
-st.dataframe(df_selected_sector)
+# Main function
+def main():
+    st.title("Stock Market Prediction App")
+    
+    st.sidebar.subheader("Nifty 50 Companies")
+    nifty50_companies = [
+        'RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS', 'HINDUNILVR.NS', 'INFY.NS',
+        'HDFC.NS', 'ICICIBANK.NS', 'KOTAKBANK.NS', 'BHARTIARTL.NS', 'MARUTI.NS',
+        'ASIANPAINT.NS', 'TECHM.NS', 'ULTRACEMCO.NS', 'AXISBANK.NS', 'ITC.NS',
+        'BAJAJFINSV.NS', 'SUNPHARMA.NS', 'BAJFINANCE.NS', 'TITAN.NS', 'BAJAJ-AUTO.NS',
+        'LT.NS', 'NESTLEIND.NS', 'ONGC.NS', 'NTPC.NS', 'UPL.NS',
+        'POWERGRID.NS', 'SBIN.NS', 'IOC.NS', 'JSWSTEEL.NS', 'HCLTECH.NS',
+        'HEROMOTOCO.NS', 'DRREDDY.NS', 'COALINDIA.NS', 'INDUSINDBK.NS', 'BRITANNIA.NS',
+        'SHREECEM.NS', 'WIPRO.NS', 'BHARTIINFRA.NS', 'DIVISLAB.NS', 'GRASIM.NS',
+        'CIPLA.NS', 'RECLTD.NS', 'ADANIPORTS.NS', 'IOC.NS', 'HINDALCO.NS'
+    ]
+    st.sidebar.header("User Input")
+    
+    # ticker = st.sidebar.text_input("Enter Ticker Symbol", ticker)
+    start_date = st.sidebar.date_input("Start Date", pd.to_datetime('2020-01-01'))
+    end_date = st.sidebar.date_input("End Date", pd.to_datetime('today'))
+    
+    
+    selected_company = st.sidebar.selectbox("Select a Company", nifty50_companies)
+    
+    data = download_data(selected_company, start_date, end_date)
+    data = preprocess_data(data)
+    data = create_features(data)
+    data = calculate_volatility(data)
+    
+    st.subheader("Stock Data")
+    st.write(data)
+    
+    predictions = None  # Initialize predictions variable
+    
+    if st.button("Train Model"):
+        model, X_test, y_test = train_model(data)
+        predictions = make_predictions(model, X_test)
+        display_results(predictions, y_test)
+    
+    # Display risk classification only if predictions are made
+    if predictions is not None:
+        risk_classification = classify_risk(data['Volatility'].iloc[-1])
+        st.sidebar.subheader("Risk Classification")
+        st.sidebar.write(f"The risk of {selected_company} is {risk_classification}-risk.")
+    
+    # Plot live line chart
+    plot_live_line_chart(data)
 
-
-
-def filedownload(df):
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()  # strings <-> bytes conversions
-    href = f'<a href="data:file/csv;base64,{b64}" download="SP500.csv">Download CSV File</a>'
-    return href
-
-st.markdown(filedownload(df_selected_sector), unsafe_allow_html=True)
-
-data = yf.download(
-        tickers = list(df_selected_sector[:10].Symbol),
-        period = "ytd",
-        interval = "1d",
-        group_by = 'ticker',
-        auto_adjust = True,
-        prepost = True,
-        threads = True,
-        proxy = None
-    )
-
-# Plot Closing Price of Query Symbol
-# def price_plot(tickerSymbol):
-#     tickerData = yf.Ticker(tickerSymbol)
-#     df = tickerData.history(period='1d', start=start_date, end=end_date)
-#     df['Date'] = df.index
-#     plt.fill_between(df.Date, df.Close, color='skyblue', alpha=0.3)
-#     plt.plot(df.Date, df.Close, color='skyblue', alpha=0.8)
-#     plt.xticks(rotation=90)
-#     plt.title(tickerSymbol, fontweight='bold')
-#     plt.xlabel('Date', fontweight='bold')
-#     plt.ylabel('Closing Price', fontweight='bold')
-#     return plt
-
-# num_company = st.sidebar.slider('Number of Companies', 1, 10)
-
-# if st.button('Show Plots'):
-#     st.header('Stock Closing Price')
-#     for i in list(df_selected_sector.Symbol)[:num_company]:
-#         plot = price_plot(i)
-#         st.pyplot(plot)
+# Run the main function
+if __name__ == "__main__":
+    main()
